@@ -26,7 +26,7 @@
 | 단계 | 상태 | 남은 것 |
 |---|---|---|
 | 1 | 대부분 완료 | 순위(`rankings`) 형식 미확인(경기 진행 후 재확인), 진행 중 `state`·getLive 구조 미확인, 정책·보조 소스 1차 조사 완료(`docs/policy_and_sources.md`), 직접 확인 항목(Riot 약관 전문, PandaScore 호출, Leaguepedia, Oracle's Elixir) 남음 |
-| 2 | 2a·2b 완료 | `raw_responses` 저장과 fetch/list CLI 완료. 정규화 테이블(tournaments, stages, teams, matches, match_teams, match_links)과 `normalize` CLI 완료. 남은 것: 2c 별칭·오늘 경기 CLI. Standing, RosterEntry 스키마는 2b 이후 |
+| 2 | 2a·2b·2c 완료(별칭은 월즈 19팀만, 미검증) | `raw_responses` 저장과 fetch/list CLI 완료. 정규화 테이블(tournaments, stages, teams, matches, match_teams, match_links)과 `normalize` CLI 완료. `aliases`, `today` CLI 완료. 남은 것: 별칭 한글 표기 사용자 확인, 일정 과거 페이지 수집, 월즈 외 대회 별칭. Standing, RosterEntry 스키마는 2b 이후 |
 | 3 | 시안 일부 | `engine/series.py` 문구 생성만 있음. 팔로우, 변경 감지, 텔레그램은 없음 |
 | 4 | 시안 일부 | `rules/worlds_2026.json`, `engine/swiss.py`(현재 전적 판정만). 시나리오 계산기 없음 |
 

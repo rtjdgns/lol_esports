@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "scope": "worlds_2026 출전 19팀",
+    "key": "team_id (lolesports getTeams id). code는 중복되므로 키로 쓰지 않는다",
+    "verified_policy": "한글 표기는 API에 없어 수동 입력. verified=false는 사용자 확인 전",
+    "updated": "2026-10-15"
+  },
+  "teams": [
+    {"team_id": "100205573495116443", "en": "Gen.G Esports", "ko": "젠지", "ko_short": "젠지", "aliases": ["GEN", "Gen.G", "젠지 e스포츠"], "verified": false},
+    {"team_id": "98767991853197861", "en": "T1", "ko": "T1", "ko_short": "T1", "aliases": ["티원", "티1"], "verified": false},
+    {"team_id": "100205573496804586", "en": "Hanwha Life Esports", "ko": "한화생명e스포츠", "ko_short": "한화생명", "aliases": ["HLE", "한화"], "verified": false},
+    {"team_id": "100725845018863243", "en": "Dplus KIA", "ko": "디플러스 기아", "ko_short": "디플러스", "aliases": ["DK", "디플기", "DPLUS"], "verified": false},
+    {"team_id": "99566404856367466", "en": "Anyone's Legend", "ko": "애니원즈 레전드", "ko_short": "AL", "aliases": ["AL", "애니원즈"], "verified": false},
+    {"team_id": "99566404853854212", "en": "BILIBILI GAMING", "ko": "빌리빌리 게이밍", "ko_short": "BLG", "aliases": ["BLG", "빌리빌리"], "verified": false},
+    {"team_id": "99566404854685458", "en": "TOP ESPORTS", "ko": "탑 e스포츠", "ko_short": "TES", "aliases": ["TES", "탑"], "verified": false},
+    {"team_id": "99566404848691211", "en": "Invictus Gaming", "ko": "인빅터스 게이밍", "ko_short": "IG", "aliases": ["IG", "인빅터스"], "verified": false},
+    {"team_id": "98767991926151025", "en": "G2 Esports", "ko": "G2 e스포츠", "ko_short": "G2", "aliases": ["G2"], "verified": false},
+    {"team_id": "103461966965149786", "en": "Movistar KOI", "ko": "모비스타 코이", "ko_short": "코이", "aliases": ["MKOI", "KOI", "모비스타"], "verified": false},
+    {"team_id": "98926509885559666", "en": "Team Liquid Alienware", "ko": "팀 리퀴드 에일리언웨어", "ko_short": "리퀴드", "aliases": ["TL", "TLAW", "팀 리퀴드"], "verified": false},
+    {"team_id": "99566405941863385", "en": "LYON", "ko": "라이온", "ko_short": "라이온", "aliases": ["LYON"], "verified": false},
+    {"team_id": "113661839307879869", "en": "Team Secret Whales", "ko": "팀 시크릿 웨일즈", "ko_short": "시크릿 웨일즈", "aliases": ["TSW", "시크릿"], "verified": false},
+    {"team_id": "107700199633958891", "en": "CTBC Flying Oyster", "ko": "CTBC 플라잉 오이스터", "ko_short": "CFO", "aliases": ["CFO", "플라잉 오이스터"], "verified": false},
+    {"team_id": "109480204628225868", "en": "LOS", "ko": "LOS", "ko_short": "LOS", "aliases": ["로스"], "verified": false, "note": "CBLOL 1시드 여부는 추정(결승 결과 미확인)"},
+    {"team_id": "98767991877340524", "en": "Cloud9 Kia", "ko": "클라우드9 기아", "ko_short": "클라우드9", "aliases": ["C9", "클라우드나인"], "verified": false},
+    {"team_id": "111692118851466302", "en": "Karmine Corp", "ko": "카르민 코프", "ko_short": "KC", "aliases": ["KC", "카르민"], "verified": false},
+    {"team_id": "100205576309502431", "en": "FURIA", "ko": "푸리아", "ko_short": "푸리아", "aliases": ["FUR", "FURIA"], "verified": false},
+    {"team_id": "107251245690956393", "en": "MVK Esports", "ko": "MVK 에스포츠", "ko_short": "MVK", "aliases": ["MVK"], "verified": false}
+  ]
+}

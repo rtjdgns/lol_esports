@@ -59,3 +59,18 @@ python -m pytest
 - 존재하지 않는 id로 getStandings를 호출하면 200과 빈 `standings`가 온다(오류가 아님). 정규화는 이를 무시한다.
 
 남은 것: 2c 팀 별칭, "오늘 경기 목록" CLI. 일정 과거 페이지(older 토큰) 수집은 아직 수집기에 없다.
+
+## 2c: 팀 별칭과 경기 목록 (구현됨)
+- `rules/team_aliases.json`: 월즈 2026 출전 19팀의 한글명(`ko`), 약칭(`ko_short`), 영문명, 별칭. 키는 `team_id`(코드는 중복이라 쓰지 않음). 전부 `verified: false`이며 사용자 확인 전 값이다.
+- `pipeline/aliases.py`: JSON → `team_aliases` 테이블 적재와 검증(미존재 team_id, 서로 다른 팀이 같은 별칭을 쓰는 경우), `resolve_alias`(공백·점·대소문자 무시, 유일할 때만 반환), `display_name`(한글 우선, 없으면 영문, TBD는 "미정").
+- `pipeline/schedule_view.py`: KST 날짜 범위 조회와 한 줄 포맷. KST는 고정 오프셋 +9.
+- `rules/worlds_2026.json`의 `entrants`: 직접 진출 15팀 + 플레이-인 4팀의 team_id.
+- CLI: `python cli.py aliases`(적재·검증), `python cli.py today [--date YYYY-MM-DD] [--days N]`.
+
+출전 팀 구성 (2026-10-15):
+- 20팀이 아니라 19팀이다. 직접 진출 15팀 + 플레이-인 4팀. 플레이-인 통과 1팀이 스위스 16번째 자리를 차지한다.
+- 플레이-인 4팀(C9, KC, FURIA, MVK)은 getStandings로 확인됨.
+- 직접 진출 14팀은 Inven Global 팀 목록과 getTeams로 확인, LOS(CBLOL 1시드)는 추정. CBLOL 결승(LOS 대 FURIA) 결과를 찾지 못했고, FURIA가 플레이-인에 있으므로 LOS가 직접 진출로 추정했다.
+- 스위스 시드 티어(LCS1/LCS2 등)는 팀 매칭을 하지 않았다. Team Liquid Alienware와 LYON이 LCS 직접 진출 두 팀이라는 것만 확인.
+
+수정한 버그: 정식명과 약칭이 같은 팀(예: FURIA→푸리아)의 `ko_short` 행이 PK 중복으로 사라져 영문이 표시됐다. `display_name`이 두 종류를 우선순위로 조회하도록 바꾸고 테스트를 추가했다.

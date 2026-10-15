@@ -2,7 +2,9 @@ import argparse
 import sys
 
 from collectors.lolesports import LolEsportsCollector
-from pipeline import normalize
+from datetime import date
+
+from pipeline import aliases, normalize, schedule_view
 from storage.db import DEFAULT_DB, connect, list_raw
 
 
@@ -38,6 +40,23 @@ def cmd_normalize(args):
         print(f"  {key}: {value}")
 
 
+def cmd_aliases(args):
+    conn = connect(args.db)
+    result = aliases.load_aliases(conn)
+    print(result)
+    if result["unknown_team_id"] or result["ambiguous_alias"]:
+        sys.exit(1)
+
+
+def cmd_today(args):
+    conn = connect(args.db)
+    start = date.fromisoformat(args.date) if args.date else schedule_view.kst_date()
+    rows = schedule_view.matches_between(conn, start, args.days)
+    print(f"{start} (KST) 부터 {args.days}일, {len(rows)}경기")
+    for m in rows:
+        print(" ", schedule_view.format_match(conn, m))
+
+
 def main():
     parser = argparse.ArgumentParser(prog="cli")
     parser.add_argument("--db", default=str(DEFAULT_DB))
@@ -55,6 +74,14 @@ def main():
 
     n = sub.add_parser("normalize", help="저장된 raw 최신본을 정규화 테이블로 변환(재실행해도 동일 결과)")
     n.set_defaults(func=cmd_normalize)
+
+    a = sub.add_parser("aliases", help="rules/team_aliases.json을 DB에 적재하고 검증")
+    a.set_defaults(func=cmd_aliases)
+
+    d = sub.add_parser("today", help="KST 기준 경기 목록")
+    d.add_argument("--date", help="YYYY-MM-DD (기본: 오늘 KST)")
+    d.add_argument("--days", type=int, default=1)
+    d.set_defaults(func=cmd_today)
 
     args = parser.parse_args()
     args.func(args)
