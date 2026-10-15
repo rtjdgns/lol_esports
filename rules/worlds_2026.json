@@ -1,0 +1,30 @@
+{
+  "event": "worlds_2026",
+  "verified_at": "2026-10-15",
+  "sources": ["https://lolesports.com/ko-KR/news/worlds-2026-primer"],
+  "play_in": {
+    "teams": 4,
+    "best_of": 5,
+    "format": "double_elimination",
+    "advance": 1,
+    "dates": "2026-10-16/2026-10-19",
+    "unverified": ["진출/탈락 세부 규칙"]
+  },
+  "swiss": {
+    "teams": 16,
+    "rounds": 5,
+    "win_target": 3,
+    "loss_limit": 3,
+    "advance": 8,
+    "dates": "2026-10-24/2026-11-01",
+    "round1_pairing": "tier1 vs tier4, tier2 vs tier3, 같은 지역 제외",
+    "later_pairing": "같은 전적끼리, 재대결 금지, 같은 지역 허용",
+    "unverified": ["진출/탈락 결정전 Bo3 여부(프라이머가 단판/3판2선승 병기)", "타이브레이커(프라이머에 언급 없음)"]
+  },
+  "knockouts": {
+    "teams": 8,
+    "best_of": 5,
+    "quarterfinal_draw": "3-0 팀 2개 vs 3-2 팀 2개 무작위, 나머지 4팀은 무작위",
+    "dates": "2026-11-04/2026-11-15"
+  }
+}

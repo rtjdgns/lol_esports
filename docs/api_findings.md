@@ -47,3 +47,11 @@ export LOLESPORTS_API_KEY=<키>
 python scripts/verify_riot_api.py
 python scripts/verify_riot_api.py --no-key
 ```
+
+## 월즈 2026 규칙 확인 (2026-10-15)
+
+출처: https://lolesports.com/ko-KR/news/worlds-2026-primer (1차 출처, WebFetch 요약 기준이라 원문 대조 필요)
+
+- 확인됨: 플레이-인 4팀 Bo5 더블 엘리미네이션(10/16~19), 스위스 16팀 5라운드(10/24~11/1), 3승 진출·3패 탈락, 토너먼트 8팀 Bo5.
+- 미확인: 스위스 결정전의 Bo3 여부(프라이머가 "단판승제, 3판 2선승제"를 병기), 타이브레이커 규칙(언급 없음).
+- 규칙 파일: `rules/worlds_2026.json`
