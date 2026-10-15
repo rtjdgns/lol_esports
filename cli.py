@@ -2,6 +2,7 @@ import argparse
 import sys
 
 from collectors.lolesports import LolEsportsCollector
+from pipeline import normalize
 from storage.db import DEFAULT_DB, connect, list_raw
 
 
@@ -30,6 +31,13 @@ def cmd_list(args):
         print(f"{r['id']:>4} {r['fetched_at']} {r['status_code']} {r['endpoint']:<24} {r['bytes']:>8}B {r['sha']} {r['params_json']}")
 
 
+def cmd_normalize(args):
+    conn = connect(args.db)
+    print("normalized:", normalize.run(conn))
+    for key, value in normalize.report(conn).items():
+        print(f"  {key}: {value}")
+
+
 def main():
     parser = argparse.ArgumentParser(prog="cli")
     parser.add_argument("--db", default=str(DEFAULT_DB))
@@ -44,6 +52,9 @@ def main():
     l = sub.add_parser("list", help="저장된 raw 응답 목록")
     l.add_argument("--limit", type=int, default=20)
     l.set_defaults(func=cmd_list)
+
+    n = sub.add_parser("normalize", help="저장된 raw 최신본을 정규화 테이블로 변환(재실행해도 동일 결과)")
+    n.set_defaults(func=cmd_normalize)
 
     args = parser.parse_args()
     args.func(args)

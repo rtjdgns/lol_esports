@@ -30,3 +30,32 @@ python -m pytest
 ## 2단계 남은 작업
 - 2b: 저장된 raw → 정규화 테이블(matches, teams, tournaments) 변환과 업서트. TBD 처리, KST 변환, 단계 slug 매핑.
 - 2c: 팀 별칭(한글·영문), "오늘 경기 목록" CLI.
+
+## 2b: 정규화 (구현됨)
+`python cli.py normalize`는 `raw_responses`에서 엔드포인트·파라미터 조합별 최신 200 응답을 읽어 아래 테이블을 채운다. 재실행해도 결과가 같다(upsert, 테스트로 확인).
+
+| 테이블 | 출처 | 비고 |
+|---|---|---|
+| tournaments | getTournamentsForLeague + getLeagues | league_slug는 getLeagues의 id→slug |
+| stages | getStandings | slug가 단계 기준 키(play_ins/swiss/knockouts) |
+| teams | getTeams | |
+| matches | getStandings + getSchedule | 대회·단계는 standings, 시각·Bo·블록명은 schedule, 상태·승수는 schedule 우선 |
+| match_teams | 위와 동일 | 팀 id는 standings, TBD는 `team_id = NULL` |
+| match_links | getStandings `previousMatchIds` | 현재 샘플에서 항상 비어 있음 |
+
+규칙:
+- 팀 id: standings 우선, 없으면 (code, name)이 teams에서 유일할 때만 매칭, 아니면 NULL. 건수는 `report`의 `unresolved_team_slots`.
+- 대회·단계: standings 조인으로만 확정. 조인 안 되는 경기는 NULL(`matches_without_tournament`).
+- 시각은 UTC 문자열 그대로 저장한다. KST 변환은 표시 단계.
+
+합의 대비 변경:
+- raw 해시가 같으면 건너뛰는 최적화는 넣지 않았다. matches는 standings와 schedule을 합쳐서 만들기 때문에 한쪽만 건너뛰면 병합 결과가 틀어진다. 대신 항상 최신본 전체를 다시 병합하고 upsert한다. 데이터가 작아 비용이 낮다.
+
+2b에서 새로 확인한 사실 (2026-10-15, 월즈 2026·2025 샘플):
+- 월즈 2025 standings 41경기, 팀 칸 82개 모두 실제 팀 id가 채워졌고 전부 getTeams에 존재한다.
+- `previousMatchIds`는 월즈 2026·2025 모두 전 경기에서 비어 있다(종료된 대회 포함). 대진 트리 복원에는 쓸 수 없다. 대안은 미정(규칙 파일의 포맷 정의 또는 블록 이름 기반).
+- `rankings`는 종료된 2025 대회에서도 비어 있다. getStandings는 순위표 소스로 쓸 수 없다. 순위는 경기 결과로 직접 계산해야 한다.
+- getStandings 경기에는 Bo 형식이 없다. `best_of`는 getSchedule에서만 온다. 일정에 안 잡힌 경기는 NULL(현재 7건).
+- 존재하지 않는 id로 getStandings를 호출하면 200과 빈 `standings`가 온다(오류가 아님). 정규화는 이를 무시한다.
+
+남은 것: 2c 팀 별칭, "오늘 경기 목록" CLI. 일정 과거 페이지(older 토큰) 수집은 아직 수집기에 없다.

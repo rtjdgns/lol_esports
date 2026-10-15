@@ -19,6 +19,65 @@ CREATE TABLE IF NOT EXISTS raw_responses (
     body_sha256 TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_raw_lookup ON raw_responses (source, endpoint, fetched_at);
+
+CREATE TABLE IF NOT EXISTS tournaments (
+    id TEXT PRIMARY KEY,
+    league_id TEXT NOT NULL,
+    league_slug TEXT,
+    slug TEXT NOT NULL,
+    start_date TEXT,
+    end_date TEXT,
+    source_raw_id INTEGER
+);
+CREATE TABLE IF NOT EXISTS stages (
+    id TEXT PRIMARY KEY,
+    tournament_id TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    name TEXT,
+    source_raw_id INTEGER
+);
+CREATE TABLE IF NOT EXISTS teams (
+    id TEXT PRIMARY KEY,
+    slug TEXT,
+    code TEXT,
+    name TEXT,
+    status TEXT,
+    home_league TEXT,
+    home_region TEXT,
+    image TEXT,
+    source_raw_id INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_teams_code ON teams (code);
+CREATE TABLE IF NOT EXISTS matches (
+    id TEXT PRIMARY KEY,
+    tournament_id TEXT,
+    stage_id TEXT,
+    block_name TEXT,
+    start_time_utc TEXT,
+    state TEXT,
+    best_of INTEGER,
+    source_raw_id INTEGER,
+    updated_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_matches_start ON matches (start_time_utc);
+CREATE TABLE IF NOT EXISTS match_teams (
+    match_id TEXT NOT NULL,
+    slot INTEGER NOT NULL,
+    team_id TEXT,
+    code TEXT,
+    name TEXT,
+    game_wins INTEGER,
+    outcome TEXT,
+    record_wins INTEGER,
+    record_losses INTEGER,
+    PRIMARY KEY (match_id, slot)
+);
+CREATE INDEX IF NOT EXISTS idx_match_teams_team ON match_teams (team_id);
+CREATE TABLE IF NOT EXISTS match_links (
+    match_id TEXT NOT NULL,
+    previous_match_id TEXT NOT NULL,
+    PRIMARY KEY (match_id, previous_match_id)
+);
 """
 
 
@@ -71,4 +130,13 @@ def list_raw(conn, limit=20):
         "SELECT id, source, endpoint, params_json, fetched_at, status_code, length(body_text) AS bytes,"
         " substr(body_sha256, 1, 8) AS sha FROM raw_responses ORDER BY id DESC LIMIT ?",
         (limit,),
+    ).fetchall()
+
+
+def latest_raw_per_params(conn, source, endpoint):
+    return conn.execute(
+        "SELECT * FROM raw_responses WHERE id IN ("
+        " SELECT MAX(id) FROM raw_responses WHERE source=? AND endpoint=? AND status_code=200 GROUP BY params_json)"
+        " ORDER BY id",
+        (source, endpoint),
     ).fetchall()
