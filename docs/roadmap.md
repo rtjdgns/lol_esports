@@ -25,7 +25,7 @@
 ## 현재 진행 상태 (2026-10-15)
 | 단계 | 상태 | 남은 것 |
 |---|---|---|
-| 1 | 대부분 완료 | 순위(`rankings`) 형식 미확인(경기 진행 후 재확인), 진행 중 `state`·getLive 구조 미확인, Riot 정책·보조 소스 조사(사전조사 프롬프트 A-6, B) 미수행 |
+| 1 | 대부분 완료 | 순위(`rankings`) 형식 미확인(경기 진행 후 재확인), 진행 중 `state`·getLive 구조 미확인, 정책·보조 소스 1차 조사 완료(`docs/policy_and_sources.md`), 직접 확인 항목(Riot 약관 전문, PandaScore 호출, Leaguepedia, Oracle's Elixir) 남음 |
 | 2 | 시안 존재 | 시안 `models/`, `collectors/`는 Match 파싱까지만 있음. Series, Standing, RosterEntry, 별칭, SQLite, CLI는 없음 |
 | 3 | 시안 일부 | `engine/series.py` 문구 생성만 있음. 팔로우, 변경 감지, 텔레그램은 없음 |
 | 4 | 시안 일부 | `rules/worlds_2026.json`, `engine/swiss.py`(현재 전적 판정만). 시나리오 계산기 없음 |
