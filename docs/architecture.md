@@ -20,3 +20,13 @@ collectors(소스별 어댑터) → models(공통 스키마) → engine(계산) 
 pip install -r requirements.txt
 python -m pytest
 ```
+
+## 2단계 진행 (2a: 원본 저장)
+- `storage/db.py`: SQLite 연결과 `raw_responses` 테이블(source, endpoint, params_json, fetched_at, status_code, body_text, body_sha256). 호출마다 행을 추가하고 덮어쓰지 않는다. 같은 응답이어도 행은 남고 `body_sha256`으로 변경 여부를 비교한다. 오류 응답(403 등)도 저장하되 `latest_raw`는 200만 반환한다.
+- `collectors/lolesports.py`: `fetch_raw`(호출만), `fetch_and_store`(호출 후 저장). 변환은 별도 함수라 저장된 본문으로 다시 돌릴 수 있다.
+- `cli.py`: `python cli.py fetch <endpoint> -p key=value`, `python cli.py list`. DB 위치는 `data/lol_esports.db`(git 제외), `--db`로 변경.
+- 같은 응답을 계속 쌓으면 용량이 늘어난다. 보관 정책(오래된 행 삭제 또는 동일 해시 생략)은 스케줄러(5단계)를 붙일 때 정한다.
+
+## 2단계 남은 작업
+- 2b: 저장된 raw → 정규화 테이블(matches, teams, tournaments) 변환과 업서트. TBD 처리, KST 변환, 단계 slug 매핑.
+- 2c: 팀 별칭(한글·영문), "오늘 경기 목록" CLI.

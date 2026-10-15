@@ -3,8 +3,10 @@ import os
 import requests
 
 from models.schema import Match, SeriesTeam
+from storage.db import RawResponse, save_raw, utc_now
 
 BASE = "https://esports-api.lolesports.com/persisted/gw"
+SOURCE = "lolesports"
 
 
 def parse_schedule_events(events):
@@ -39,25 +41,19 @@ def parse_schedule_events(events):
 
 
 class LolEsportsCollector:
-    def __init__(self, api_key=None, hl="ko-KR"):
+    def __init__(self, api_key=None, hl="ko-KR", session=None):
         key = api_key or os.environ.get("LOLESPORTS_API_KEY")
         if not key:
             raise RuntimeError("LOLESPORTS_API_KEY 필요")
         self.hl = hl
-        self.session = requests.Session()
+        self.session = session or requests.Session()
         self.session.headers["x-api-key"] = key
 
-    def _get(self, endpoint, **params):
-        resp = self.session.get(f"{BASE}/{endpoint}", params={"hl": self.hl, **params}, timeout=20)
-        resp.raise_for_status()
-        return resp.json()["data"]
+    def fetch_raw(self, endpoint, **params) -> RawResponse:
+        full = {"hl": self.hl, **params}
+        resp = self.session.get(f"{BASE}/{endpoint}", params=full, timeout=20)
+        return RawResponse(SOURCE, endpoint, full, utc_now(), resp.status_code, resp.text)
 
-    def league_id(self, slug):
-        for league in self._get("getLeagues")["leagues"]:
-            if league["slug"] == slug:
-                return league["id"]
-        raise KeyError(slug)
-
-    def schedule(self, league_slug):
-        data = self._get("getSchedule", leagueId=self.league_id(league_slug))
-        return parse_schedule_events(data["schedule"]["events"])
+    def fetch_and_store(self, conn, endpoint, **params):
+        raw = self.fetch_raw(endpoint, **params)
+        return save_raw(conn, raw), raw
