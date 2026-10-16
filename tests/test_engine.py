@@ -3,7 +3,7 @@ from pathlib import Path
 
 from collectors.lolesports import parse_schedule_events
 from engine.series import series_status
-from engine.swiss import load_rules, team_status
+from engine.swiss import classify, is_decisive, load_rules
 from models.schema import Match, SeriesTeam
 
 
@@ -21,11 +21,11 @@ def test_series_phrases():
     assert series_status(make("completed", 3, 2, 1)) == "A 2 : B 1 · A 승"
 
 
-def test_swiss_status():
-    assert team_status(3, 1) == "진출 확정"
-    assert team_status(1, 3) == "탈락 확정"
-    assert "진출 결정전" in team_status(2, 1)
-    assert "탈락 결정전" in team_status(1, 2)
+def test_swiss_classify():
+    assert classify(3, 1) == "advanced"
+    assert classify(1, 3) == "eliminated"
+    assert classify(2, 2) == "alive"
+    assert is_decisive(2, 1) and is_decisive(1, 2) and not is_decisive(1, 1)
 
 
 def test_rules_load():

@@ -4,7 +4,7 @@ import sys
 from collectors.lolesports import LolEsportsCollector
 from datetime import date
 
-from pipeline import aliases, follow, normalize, schedule_view
+from pipeline import aliases, follow, normalize, schedule_view, swiss_view
 from storage.db import DEFAULT_DB, connect, list_raw
 
 
@@ -68,6 +68,16 @@ def cmd_follow(args):
         print(f"{name}: {'적용' if fn(conn, name) else '팀을 찾지 못함(별칭 확인)'}")
 
 
+def cmd_status(args):
+    conn = connect(args.db)
+    print("\n".join(swiss_view.render_status(conn, args.tournament)))
+
+
+def cmd_scenario(args):
+    conn = connect(args.db)
+    print("\n".join(swiss_view.render_scenario(conn, args.tournament, args.team)))
+
+
 def main():
     parser = argparse.ArgumentParser(prog="cli")
     parser.add_argument("--db", default=str(DEFAULT_DB))
@@ -99,6 +109,17 @@ def main():
     fo.add_argument("action", choices=["add", "remove", "list"])
     fo.add_argument("names", nargs="*")
     fo.set_defaults(func=cmd_follow)
+
+    st = sub.add_parser("status", help="현재 대회 진행 상태(일정·결과·전적). 경우의 수는 scenario")
+    st.add_argument("stage", choices=["swiss"])
+    st.add_argument("--tournament", default="worlds_2026")
+    st.set_defaults(func=cmd_status)
+
+    sc = sub.add_parser("scenario", help="경우의 수(결정전, 이기면/지면, 다음 상대 후보, 최종 전적)")
+    sc.add_argument("stage", choices=["swiss"])
+    sc.add_argument("--tournament", default="worlds_2026")
+    sc.add_argument("--team", help="팀 별칭(예: 젠지)")
+    sc.set_defaults(func=cmd_scenario)
 
     args = parser.parse_args()
     args.func(args)
