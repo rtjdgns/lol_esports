@@ -1,7 +1,9 @@
 from engine.types import StageMatch
 
 
-def order_roles(matches, roles):
+def order_roles(matches, roles, order="start_time"):
+    if order != "start_time":
+        raise NotImplementedError(order)
     if len(matches) != len(roles):
         raise ValueError(f"경기 수 {len(matches)} 가 구조 {len(roles)} 와 다름")
     ordered = sorted(matches, key=lambda m: (m.start_time or "", int(m.match_id)))
@@ -79,7 +81,7 @@ def enumerate_outcomes(by_role, roles, slots):
 
 def team_scenarios(matches, cfg):
     roles, slots = cfg["roles"], cfg["slots"]
-    by_role = order_roles(matches, roles)
+    by_role = order_roles(matches, roles, cfg["order"])
     issues = validate(by_role, slots)
     outcomes = enumerate_outcomes(by_role, roles, slots)
     if outcomes is None:

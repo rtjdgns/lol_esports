@@ -1,6 +1,5 @@
 from engine import elimination
 from engine.series import series_text
-from engine.swiss import load_rules
 from pipeline.aliases import display_name, resolve_alias
 from pipeline.schedule_view import KST, parse_utc
 from pipeline.swiss_data import load_stage
@@ -12,11 +11,6 @@ def _name(conn, names, team_id):
 
 def _when(m):
     return parse_utc(m.start_time).astimezone(KST).strftime("%m-%d %H:%M") if m.start_time else "시각 미정"
-
-
-def _load(conn, slug):
-    matches, names = load_stage(conn, slug, "play_ins")
-    return matches, names
 
 
 def _slot_names(conn, names, cfg, by_role, role):
@@ -36,13 +30,13 @@ def _slot_names(conn, names, cfg, by_role, role):
     return tuple(out), (0, 0)
 
 
-def render_status(conn, tournament_slug):
-    cfg = load_rules()["play_in"]["structure"]
-    matches, names = _load(conn, tournament_slug)
+def render_status(conn, tournament_slug, stage, rules):
+    cfg = stage["params"]
+    matches, names = load_stage(conn, tournament_slug, stage["slug"])
     if not matches:
         return [f"{tournament_slug}: 플레이-인 경기 데이터 없음"]
     try:
-        by_role = elimination.order_roles(matches, cfg["roles"])
+        by_role = elimination.order_roles(matches, cfg["roles"], cfg["order"])
     except ValueError as e:
         return [f"{tournament_slug}: 플레이-인 구조와 맞지 않음 ({e})"]
     done = sum(1 for m in matches if m.state == "completed")
@@ -59,9 +53,9 @@ def render_status(conn, tournament_slug):
     return lines
 
 
-def render_scenario(conn, tournament_slug, only_team=None):
-    cfg = load_rules()["play_in"]["structure"]
-    matches, names = _load(conn, tournament_slug)
+def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
+    cfg = stage["params"]
+    matches, names = load_stage(conn, tournament_slug, stage["slug"])
     if not matches:
         return [f"{tournament_slug}: 플레이-인 경기 데이터 없음"]
     res = elimination.team_scenarios(matches, cfg)

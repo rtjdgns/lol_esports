@@ -1,16 +1,7 @@
-import json
 from collections import Counter
 from dataclasses import dataclass
-from pathlib import Path
 
 from engine.types import StageMatch
-
-RULES_PATH = Path(__file__).resolve().parent.parent / "rules" / "worlds_2026.json"
-
-
-def load_rules(path=RULES_PATH):
-    return json.loads(Path(path).read_text(encoding="utf-8"))
-
 
 SwissMatch = StageMatch
 
@@ -85,11 +76,11 @@ def final_paths(wins, losses, win_target=3, loss_limit=3):
     return dict(out)
 
 
-def validate(matches, rounds, rules):
+def validate(matches, rounds, params):
     issues = []
     teams = {}
     met = set()
-    decisive_bo = rules["swiss"]["best_of"]
+    decisive_bo = params["best_of"]
     for m in sorted(matches, key=sort_key):
         if not m.known():
             continue
@@ -136,8 +127,8 @@ def next_opponent_candidates(team_id, record_after, games_after, teams, pending,
     return sorted(out)
 
 
-def team_scenarios(matches, rules, team_ids=()):
-    cfg = rules["swiss"]
+def team_scenarios(matches, params, team_ids=()):
+    cfg = params
     target, limit = cfg["win_target"], cfg["loss_limit"]
     teams = replay(matches, team_ids)
     pending = _pending_by_team(matches)

@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 
 from engine import elimination
-from engine.swiss import load_rules
+from engine.rules import load_event_rules, stage_params
 from engine.types import StageMatch
-from pipeline import aliases, normalize, playin_view
+from pipeline import aliases, normalize, registry
 from storage.db import connect
 
 FIXTURE = Path(__file__).resolve().parent / "fixtures" / "play_in_20261016.json"
@@ -15,7 +15,7 @@ FIXTURE = Path(__file__).resolve().parent / "fixtures" / "play_in_20261016.json"
 
 @pytest.fixture(scope="module")
 def cfg():
-    return load_rules()["play_in"]["structure"]
+    return stage_params(load_event_rules("worlds_2026"), "play_ins")
 
 
 def build(cfg, bits, completed, seeds=("A", "B", "C", "D")):
@@ -106,6 +106,6 @@ def test_views_render_from_db():
     put(c, "getStandings", f"getStandings_{T2026}.json", tournamentId=T2026)
     normalize.run(c)
     aliases.load_aliases(c)
-    status = "\n".join(playin_view.render_status(c, "worlds_2026"))
+    status = "\n".join(registry.render(c, "worlds_2026", "status", "play_ins"))
     assert "승자조 결승" in status and "검증 경고" not in status
-    assert "1라운드 대진 미확정" not in "\n".join(playin_view.render_scenario(c, "worlds_2026"))
+    assert "1라운드 대진 미확정" not in "\n".join(registry.render(c, "worlds_2026", "scenario", "play_ins"))

@@ -29,7 +29,7 @@ def test_alias_file_valid(conn):
 
 def test_alias_file_covers_worlds_entrants():
     data = json.loads(aliases.ALIASES_PATH.read_text(encoding="utf-8"))
-    rules = json.loads((aliases.ALIASES_PATH.parent / "worlds_2026.json").read_text(encoding="utf-8"))
+    rules = json.loads((aliases.ALIASES_PATH.parent / "events" / "worlds_2026.json").read_text(encoding="utf-8"))
     entrants = set(rules["entrants"]["direct"]) | set(rules["entrants"]["play_in"])
     assert len(entrants) == 19
     assert entrants == {t["team_id"] for t in data["teams"]}

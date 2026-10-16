@@ -7,7 +7,7 @@ collectors(소스별 어댑터) → models(공통 스키마) → engine(계산) 
 - `models/schema.py`: `Match`, `SeriesTeam`. 소스와 무관한 공통 형태. Standing, RosterEntry는 getStandings `rankings` 형식 확인 후 추가한다.
 - `collectors/lolesports.py`: Riot lolesports API 어댑터. `parse_schedule_events`는 네트워크 없이 원본 응답 dict를 변환하므로 `data/raw_samples/`로 테스트한다. 보조 소스를 붙일 때 같은 `Match` 리스트를 반환하는 클래스를 추가한다.
 - `engine/series.py`: 시리즈 상황 문구. 확정 승수는 `Bo // 2 + 1`, 남은 승수는 확정 승수에서 현재 승수를 뺀 값이다.
-- `engine/swiss.py`: 스위스 팀 상태(진출/탈락 확정, 필요 승수, 결정전). 규칙 수치는 `rules/worlds_2026.json`에서 읽는다.
+- `engine/swiss.py`: 스위스 팀 상태(진출/탈락 확정, 필요 승수, 결정전). 규칙 수치는 `rules/events/worlds_2026.json`에서 읽는다.
 - `rules/`: 수동 입력 규칙 파일. 각 파일에 출처와 검증일, 미확인 항목을 기록한다.
 
 ## 주의
@@ -64,7 +64,7 @@ python -m pytest
 - `rules/team_aliases.json`: 월즈 2026 출전 19팀의 한글명(`ko`), 약칭(`ko_short`), 영문명, 별칭. 키는 `team_id`(코드는 중복이라 쓰지 않음). 전부 `verified: false`이며 사용자 확인 전 값이다.
 - `pipeline/aliases.py`: JSON → `team_aliases` 테이블 적재와 검증(미존재 team_id, 서로 다른 팀이 같은 별칭을 쓰는 경우), `resolve_alias`(공백·점·대소문자 무시, 유일할 때만 반환), `display_name`(한글 우선, 없으면 영문, TBD는 "미정").
 - `pipeline/schedule_view.py`: KST 날짜 범위 조회와 한 줄 포맷. KST는 고정 오프셋 +9.
-- `rules/worlds_2026.json`의 `entrants`: 직접 진출 15팀 + 플레이-인 4팀의 team_id.
+- `rules/events/worlds_2026.json`의 `entrants`: 직접 진출 15팀 + 플레이-인 4팀의 team_id.
 - CLI: `python cli.py aliases`(적재·검증), `python cli.py today [--date YYYY-MM-DD] [--days N]`.
 
 출전 팀 구성 (2026-10-15):
@@ -80,15 +80,15 @@ python -m pytest
 
 | 명령 | 내용 |
 |---|---|
-| `python cli.py status swiss [--tournament 슬러그]` | 현재 진행 상태: 라운드별 일정·결과(시리즈 문구), 전적별 현황, 검증 경고 |
-| `python cli.py scenario swiss [--tournament 슬러그] [--team 별칭]` | 경우의 수: 팀별 결정전 여부, 이기면/지면 결과, 다음 라운드 후보 상대, 도달 가능한 최종 전적(경로 수) |
+| `python cli.py status <대회> --stage swiss` | 현재 진행 상태: 라운드별 일정·결과(시리즈 문구), 전적별 현황, 검증 경고 |
+| `python cli.py scenario <대회> --stage swiss [--team 별칭]` | 경우의 수: 팀별 결정전 여부, 이기면/지면 결과, 다음 라운드 후보 상대, 도달 가능한 최종 전적(경로 수) |
 
-기본 대회는 `worlds_2026`. 과거 대회(`worlds_2025`)로도 볼 수 있다.
+`<대회>`는 대회 슬러그(예: `worlds_2026`, 과거 대회 `worlds_2025`). `--stage`를 생략하면 규칙 파일의 모든 단계를 순서대로 보여 준다.
 
 구성:
 - `engine/swiss.py`: DB와 무관한 계산. 라운드 배정(`assign_rounds`), 경기 재생(`replay`), 규칙 검증(`validate`), 최종 전적 경로 수(`final_paths`), 팀별 경우의 수(`team_scenarios`).
 - `pipeline/swiss_data.py`: DB → `SwissMatch`. `pipeline/swiss_view.py`: 두 화면의 텍스트 출력.
-- `rules/worlds_2026.json`의 `swiss`: 승/패 기준, 라운드별 경기 수 `[8,8,8,6,3]`, Bo 규칙.
+- `rules/events/worlds_2026.json`의 `swiss`: 승/패 기준, 라운드별 경기 수 `[8,8,8,6,3]`, Bo 규칙.
 
 판정 규칙:
 - 진출은 3승, 탈락은 3패. 한쪽이 2승 또는 2패인 경기가 결정전(Bo3). 월즈 2025 33경기로 검증.
@@ -106,7 +106,7 @@ python -m pytest
 - 수정한 버그: 진행 중 경기의 현재 상대가 "이기면" 후보에 들어가던 문제. 포함 관계 검사만으로는 잡히지 않아 별도 테스트를 추가했다.
 
 ## 4b: 토너먼트 (구현됨)
-`python cli.py status knockouts` / `python cli.py scenario knockouts [--tournament 슬러그] [--team 별칭]`. 스위스와 같이 진행 상태와 경우의 수를 분리했다.
+`python cli.py status <대회> --stage knockouts` / `python cli.py scenario <대회> --stage knockouts [--team 별칭]`. 스위스와 같이 진행 상태와 경우의 수를 분리했다.
 
 원문 확인 (2026-10-16, 한글판·영문판 대조, https://lolesports.com/ko-KR/news/worlds-2026-primer):
 - 8강 추첨: 스위스 3-0 두 팀이 3-2 팀을 상대로 무작위 배정. 나머지 4팀(남은 3-2 한 팀 + 3-1 세 팀)은 서로 무작위로 2경기. 월즈 2025 실제 8강과 일치.
@@ -117,7 +117,7 @@ python -m pytest
 구성:
 - `engine/knockout.py`: `build_rounds`(경기 id 순서로 8강4·4강2·결승1 분할), `feeders`(인접 두 경기의 승자가 다음 경기로), `validate_bracket`(이전 라운드 승자가 참가 팀에 있는지), `enumerate_outcomes`(남은 경기 결과를 모두 열거, 최대 2^7), `team_scenarios`, `qf_draw_options`(8강 추첨 가능 결과 18가지 열거).
 - `engine/types.py`: 스위스와 토너먼트가 공유하는 `StageMatch`.
-- `pipeline/knockout_view.py`: 두 화면. `rules/worlds_2026.json`의 `knockouts`: 구조, 추첨 규칙, 출처.
+- `pipeline/knockout_view.py`: 두 화면. `rules/events/worlds_2026.json`의 `knockouts`: 구조, 추첨 규칙, 출처.
 
 출력:
 - `status`: 8강1~결승 일정·결과. 팀이 미정인 자리는 "8강1 승자"로 표시.
@@ -133,11 +133,11 @@ python -m pytest
 검증(테스트): 월즈 2025 7경기를 시점별로 잘라(0~7경기 종료) 각 시점에서 결과 조합 수가 2^미결 경기 수와 같고, 실제 우승 팀이 항상 우승 가능, 실제 모든 대진이 상대 후보에 포함됨을 확인. 추첨 가능 결과 18가지에 실제 8강 대진이 포함됨.
 
 ## 4c: 플레이-인 (구현됨)
-`python cli.py status play_in` / `python cli.py scenario play_in [--tournament 슬러그] [--team 별칭]`.
+`python cli.py status <대회> --stage play_ins` / `python cli.py scenario <대회> --stage play_ins [--team 별칭]`.
 
 구성:
 - `engine/elimination.py`: 승자/패자 연결 그래프로 정의된 단판 탈락 대진의 범용 엔진. `order_roles`(시작 시각 순으로 역할 배정), `enumerate_outcomes`(남은 결과 전부 열거, 6경기면 최대 64가지), `team_scenarios`(팀별 진출 조합 수, 다음 경기와 상대, 패하면 탈락 여부, 라운드별 상대 후보), `validate`.
-- `rules/worlds_2026.json`의 `play_in.structure`: `roles`(6개), `slots`(`W:역할`=승자, `L:역할`=패자, `seed`=1라운드 팀), `labels`, `advance_from`. 탈락 경기는 슬롯에서 `L:`로 참조되지 않는 경기로 계산해 도출한다(패자조 1경기, 패자조 결승, 결승).
+- `rules/events/worlds_2026.json`의 `play_in.structure`: `roles`(6개), `slots`(`W:역할`=승자, `L:역할`=패자, `seed`=1라운드 팀), `labels`, `advance_from`. 탈락 경기는 슬롯에서 `L:`로 참조되지 않는 경기로 계산해 도출한다(패자조 1경기, 패자조 결승, 결승).
 - `pipeline/playin_view.py`: 두 화면. 팀이 미정인 자리는 "승자조 결승 승자"처럼 표시.
 
 연결 구조 (경기 시각 순서): 1라운드 A, 1라운드 B → 승자조 결승(승자끼리), 패자조 1경기(패자끼리) → 패자조 결승(승자조 결승 패자 대 패자조 1경기 승자) → 결승(승자조 결승 승자 대 패자조 결승 승자). 결승 승자 1팀이 스위스 진출.
@@ -153,3 +153,24 @@ python -m pytest
 - 실데이터 스냅샷에서 진출 조합 KC 6/16, MVK 6/16, C9 2/16, FUR 2/16 (손으로 검산한 값과 일치).
 
 한계: 결과 조합 수는 경기 결과(승/패)의 개수이며 확률이 아니다. Bo5 세트 스코어는 열거하지 않는다. 진행 중인 경기는 미결로 취급한다.
+
+
+## 규칙 구조: 대회별 파일 (연도별 갱신)
+규칙은 해마다 달라질 수 있어 대회 슬러그마다 파일 하나를 둔다. 실행 중에 AI가 규칙 문서를 읽거나 해석하지 않는다. 규칙 파일은 사람이 공식 문서를 읽고 입력한 파라미터이고, 판정은 코드와 테스트가 한다.
+
+- 위치: `rules/events/<대회 슬러그>.json`. 슬러그는 API의 대회 `slug`(예: `worlds_2026`)와 같다. 파일 이름과 `event` 값이 다르면 로드가 실패한다.
+- 최상위 키: `schema_version`, `event`, `league_slug`, `verified_at`, `sources`, `stages`, `entrants`(선택), `notes`(선택). 이 밖의 키는 거부된다. 설명은 `notes`에만 쓴다.
+- `stages[]`: `slug`(API의 단계 슬러그), `type`, `label`, `params`, `notes`(선택).
+- 형식 종류(`type`)와 `params` (`engine/rules.py`에 닫힌 목록으로 정의, 목록 밖 키는 거부):
+
+| type | 엔진 | params |
+|---|---|---|
+| `swiss` | `engine/swiss.py` | `win_target`, `loss_limit`, `round_sizes`, `best_of{normal, decisive}` |
+| `single_elim` | `engine/knockout.py` | `round_sizes`, `round_labels`, `wiring`(`adjacent_pairs`), `draw`(`none`/`worlds_swiss_records`, 선택) |
+| `bracket_graph` | `engine/elimination.py` | `roles`, `labels`, `slots`, `advance_from`, `order`(`start_time`) |
+
+- 값이 코드에 연결된 항목: `wiring`, `draw`, `order`는 허용 값이 코드에 고정돼 있다. 새 값을 쓰려면 엔진에 구현을 추가해야 하며, 그 전에는 로드 단계에서 실패한다.
+- 검증: `python cli.py rules`가 모든 대회 규칙 파일을 검사한다. 테스트(`tests/test_rules.py`)가 잘못된 규칙 19종이 거부되는지, 모든 `params` 키를 코드가 읽는지(죽은 키 없음)를 확인한다.
+- 등록: `pipeline/registry.py`가 형식 종류별 화면을 연결한다. 새 형식 종류는 엔진, 화면, `STAGE_TYPES`, 등록부를 함께 추가해야 하고, 테스트가 이 둘의 불일치를 잡는다.
+- 팀 별칭(`rules/team_aliases.json`)은 team_id 기준 전역 파일로 해마다 누적한다. 대회별 출전 팀은 규칙 파일의 `entrants`에 둔다.
+- 과거 대회 규칙 파일(`worlds_2025`)은 삭제하지 않고 회귀 검증에 쓴다. 월즈 2025는 플레이-인 단계의 형식을 확인하지 못해 단계를 넣지 않았다.

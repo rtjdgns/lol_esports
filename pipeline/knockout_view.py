@@ -1,9 +1,9 @@
 from engine import knockout
 from engine.series import series_text
-from engine.swiss import classify, load_rules, replay
-from pipeline.aliases import display_name
+from engine.swiss import classify, replay
+from pipeline.aliases import display_name, resolve_alias
 from pipeline.schedule_view import KST, parse_utc
-from pipeline.swiss_data import load_knockouts, load_swiss
+from pipeline.swiss_data import load_stage
 
 
 def _name(conn, names, team_id):
@@ -14,37 +14,35 @@ def _when(m):
     return parse_utc(m.start_time).astimezone(KST).strftime("%m-%d %H:%M") if m.start_time else "시각 미정"
 
 
-def _label(rules, r, j):
-    return f"{rules['knockouts']['round_labels'][r]}{j + 1}"
+def _label(params, r, j):
+    return f"{params['round_labels'][r]}{j + 1}"
 
 
-def _slot_names(conn, names, rules, rounds, r, j):
+def _slot_names(conn, names, params, rounds, r, j):
     m = rounds[r][j]
-    if r == 0:
-        return tuple(_name(conn, names, t) for t in m.team_ids), m.wins
-    if m.known():
+    if r == 0 or m.known():
         return tuple(_name(conn, names, t) for t in m.team_ids), m.wins
     slots = []
     for k, f in enumerate(knockout.feeders(rounds, r, j)):
         w = knockout.winner_of(f)
-        slots.append(_name(conn, names, w) if w else f"{_label(rules, r - 1, 2 * j + k)} 승자")
+        slots.append(_name(conn, names, w) if w else f"{_label(params, r - 1, 2 * j + k)} 승자")
     return tuple(slots), (0, 0)
 
 
-def render_status(conn, tournament_slug):
-    rules = load_rules()
-    matches, names = load_knockouts(conn, tournament_slug)
+def render_status(conn, tournament_slug, stage, rules):
+    params = stage["params"]
+    matches, names = load_stage(conn, tournament_slug, stage["slug"])
     if not matches:
-        return [f"{tournament_slug}: 토너먼트 경기 데이터 없음"]
-    rounds = knockout.build_rounds(matches, rules["knockouts"]["round_sizes"])
+        return [f"{tournament_slug}: {stage['label']} 경기 데이터 없음"]
+    rounds = knockout.build_rounds(matches, params["round_sizes"])
     done = sum(1 for m in matches if m.state == "completed")
-    lines = [f"[{tournament_slug}] 토너먼트 진행 상태 — 완료 {done}/{len(matches)}"]
+    lines = [f"[{tournament_slug}] {stage['label']} 진행 상태 — 완료 {done}/{len(matches)}"]
     for r, rnd in enumerate(rounds):
-        lines.append(f"\n{rules['knockouts']['round_labels'][r]}")
+        lines.append(f"\n{params['round_labels'][r]}")
         for j, m in enumerate(rnd):
-            slot_names, wins = _slot_names(conn, names, rules, rounds, r, j)
+            slot_names, wins = _slot_names(conn, names, params, rounds, r, j)
             text = series_text(m.state, m.best_of, slot_names, wins) if m.best_of else f"{slot_names[0]} vs {slot_names[1]} · Bo?"
-            lines.append(f"  {_label(rules, r, j)}  {_when(m)}  {text}")
+            lines.append(f"  {_label(params, r, j)}  {_when(m)}  {text}")
     final = knockout.winner_of(rounds[-1][0])
     if final:
         lines.append(f"\n우승: {_name(conn, names, final)}")
@@ -52,10 +50,13 @@ def render_status(conn, tournament_slug):
     return lines
 
 
-def _pre_draw_lines(conn, tournament_slug, rules, names_ko):
-    swiss, snames = load_swiss(conn, tournament_slug)
+def _pre_draw_lines(conn, tournament_slug, params, rules):
+    swiss_stage = next((s for s in rules["stages"] if s["type"] == "swiss"), None)
+    if params.get("draw") != "worlds_swiss_records" or swiss_stage is None:
+        return ["  대진 추첨 전. 이 대회 규칙에는 추첨 전 계산 방식이 정의돼 있지 않음"]
+    cfg = swiss_stage["params"]
+    swiss, snames = load_stage(conn, tournament_slug, swiss_stage["slug"])
     teams = replay(swiss)
-    cfg = rules["swiss"]
     advanced = {t: (r.wins, r.losses) for t, r in teams.items() if classify(r.wins, r.losses, cfg["win_target"], cfg["loss_limit"]) == "advanced"}
     lines = ["  8강 대진 추첨 전. 규칙: 스위스 3-0 두 팀은 3-2 팀을 상대로, 나머지 4팀은 서로 무작위."]
     if len(advanced) != 8:
@@ -76,24 +77,23 @@ def _pre_draw_lines(conn, tournament_slug, rules, names_ko):
     return lines
 
 
-def render_scenario(conn, tournament_slug, only_team=None):
-    rules = load_rules()
-    matches, names = load_knockouts(conn, tournament_slug)
+def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
+    params = stage["params"]
+    matches, names = load_stage(conn, tournament_slug, stage["slug"])
     if not matches:
-        return [f"{tournament_slug}: 토너먼트 경기 데이터 없음"]
-    result = knockout.team_scenarios(matches, rules)
-    header = f"[{tournament_slug}] 토너먼트 경우의 수 (조합 수는 경기 결과의 가능한 개수이며 확률이 아님)"
+        return [f"{tournament_slug}: {stage['label']} 경기 데이터 없음"]
+    result = knockout.team_scenarios(matches, params)
+    header = f"[{tournament_slug}] {stage['label']} 경우의 수 (조합 수는 경기 결과의 가능한 개수이며 확률이 아님)"
     if not result["drawn"]:
-        return [header] + _pre_draw_lines(conn, tournament_slug, rules, names)
+        return [header] + _pre_draw_lines(conn, tournament_slug, params, rules)
     rounds, total = result["rounds"], result["total"]
     wanted = None
     if only_team:
-        from pipeline.aliases import resolve_alias
         wanted = resolve_alias(conn, only_team)
         if wanted not in result["teams"]:
             return [header, f"  '{only_team}' 팀은 이 토너먼트에 없음"]
     lines = [header, f"  남은 결과 조합 {total}가지"]
-    labels = rules["knockouts"]["round_labels"]
+    labels = params["round_labels"]
 
     def order(item):
         t, s = item

@@ -3,8 +3,9 @@ from dataclasses import replace
 import pytest
 
 from engine import knockout, swiss
-from pipeline import aliases, knockout_view, normalize
-from pipeline.swiss_data import load_knockouts, load_swiss
+from engine.rules import load_event_rules, stage_params
+from pipeline import aliases, knockout_view, normalize, registry
+from pipeline.swiss_data import load_stage, load_swiss
 from storage.db import connect
 from tests.test_normalize import LEAGUE_ID, put
 from tests.test_swiss import T2025, T2026
@@ -26,12 +27,12 @@ def conn():
 
 @pytest.fixture(scope="module")
 def rules():
-    return swiss.load_rules()
+    return stage_params(load_event_rules("worlds_2026"), "knockouts")
 
 
 @pytest.fixture(scope="module")
 def ko2025(conn):
-    return load_knockouts(conn, "worlds_2025")[0]
+    return load_stage(conn, "worlds_2025", "knockouts")[0]
 
 
 def _cut(matches, completed_ids):
@@ -39,7 +40,7 @@ def _cut(matches, completed_ids):
 
 
 def test_bracket_structure_matches_2025(ko2025, rules):
-    rounds = knockout.build_rounds(ko2025, rules["knockouts"]["round_sizes"])
+    rounds = knockout.build_rounds(ko2025, rules["round_sizes"])
     assert [len(r) for r in rounds] == [4, 2, 1]
     assert knockout.validate_bracket(rounds) == []
 
@@ -55,7 +56,7 @@ def test_every_cut_point_keeps_actual_path_possible(ko2025, rules):
     chronological = [m.match_id for m in sorted(ko2025, key=lambda m: (m.start_time or "", int(m.match_id)))]
     final = [m for m in ko2025 if m.match_id == max(ko2025, key=lambda x: int(x.match_id)).match_id][0]
     champion = knockout.winner_of(final)
-    full = knockout.build_rounds(ko2025, rules["knockouts"]["round_sizes"])
+    full = knockout.build_rounds(ko2025, rules["round_sizes"])
     for k in range(len(chronological) + 1):
         done = set(chronological[:k])
         res = knockout.team_scenarios(_cut(ko2025, done), rules)
@@ -101,21 +102,23 @@ def test_qf_draw_options_rejects_unexpected_shape():
 
 
 def test_pre_draw_scenario_view_when_swiss_complete(conn, monkeypatch):
-    real = knockout_view.load_knockouts
+    real = knockout_view.load_stage
 
-    def undrawn(c, slug):
-        matches, names = real(c, slug)
-        return [replace(m, team_ids=(None, None), state="unstarted", wins=(0, 0)) for m in matches], names
+    def undrawn(c, slug, stage_slug):
+        matches, names = real(c, slug, stage_slug)
+        if stage_slug == "knockouts":
+            matches = [replace(m, team_ids=(None, None), state="unstarted", wins=(0, 0)) for m in matches]
+        return matches, names
 
-    monkeypatch.setattr(knockout_view, "load_knockouts", undrawn)
-    text = "\n".join(knockout_view.render_scenario(conn, "worlds_2025"))
+    monkeypatch.setattr(knockout_view, "load_stage", undrawn)
+    text = "\n".join(registry.render(conn, "worlds_2025", "scenario", "knockouts"))
     assert "가능한 8강 추첨 결과 18가지" in text and "AL 3-0" in text
 
 
 def test_views_for_2026_and_2025(conn):
-    status = "\n".join(knockout_view.render_status(conn, "worlds_2025"))
+    status = "\n".join(registry.render(conn, "worlds_2025", "status", "knockouts"))
     assert "우승: T1" in status and "검증 경고" not in status
-    scen = "\n".join(knockout_view.render_scenario(conn, "worlds_2025"))
+    scen = "\n".join(registry.render(conn, "worlds_2025", "scenario", "knockouts"))
     assert "T1 · 우승" in scen
-    assert "진출 확정 0/8팀" in "\n".join(knockout_view.render_scenario(conn, "worlds_2026"))
-    assert "8강1 승자 vs 8강2 승자" in "\n".join(knockout_view.render_status(conn, "worlds_2026"))
+    assert "진출 확정 0/8팀" in "\n".join(registry.render(conn, "worlds_2026", "scenario", "knockouts"))
+    assert "8강1 승자 vs 8강2 승자" in "\n".join(registry.render(conn, "worlds_2026", "status", "knockouts"))

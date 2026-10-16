@@ -4,9 +4,8 @@ import sys
 from collectors.lolesports import LolEsportsCollector
 from datetime import date
 
-from pipeline import aliases, follow, knockout_view, normalize, playin_view, schedule_view, swiss_view
-
-VIEWS = {"play_in": playin_view, "swiss": swiss_view, "knockouts": knockout_view}
+from engine.rules import RulesError, list_events, load_event_rules
+from pipeline import aliases, follow, normalize, registry, schedule_view
 from storage.db import DEFAULT_DB, connect, list_raw
 
 
@@ -72,12 +71,31 @@ def cmd_follow(args):
 
 def cmd_status(args):
     conn = connect(args.db)
-    print("\n".join(VIEWS[args.stage].render_status(conn, args.tournament)))
+    try:
+        print(chr(10).join(registry.render(conn, args.tournament, "status", args.stage)))
+    except RulesError as e:
+        sys.exit(str(e))
 
 
 def cmd_scenario(args):
     conn = connect(args.db)
-    print("\n".join(VIEWS[args.stage].render_scenario(conn, args.tournament, args.team)))
+    try:
+        print(chr(10).join(registry.render(conn, args.tournament, "scenario", args.stage, args.team)))
+    except RulesError as e:
+        sys.exit(str(e))
+
+
+def cmd_rules(args):
+    failed = False
+    for event in list_events():
+        try:
+            rules = load_event_rules(event)
+            print(f"OK   {event} (검증일 {rules['verified_at']}, 단계 {', '.join(s['slug'] for s in rules['stages'])})")
+        except RulesError as e:
+            failed = True
+            print(f"FAIL {event}: {e}")
+    if failed:
+        sys.exit(1)
 
 
 def main():
@@ -113,15 +131,18 @@ def main():
     fo.set_defaults(func=cmd_follow)
 
     st = sub.add_parser("status", help="현재 대회 진행 상태(일정·결과·전적). 경우의 수는 scenario")
-    st.add_argument("stage", choices=list(VIEWS))
-    st.add_argument("--tournament", default="worlds_2026")
+    st.add_argument("tournament", help="대회 슬러그(예: worlds_2026). rules/events/<슬러그>.json 필요")
+    st.add_argument("--stage", help="단계 슬러그(예: swiss). 생략하면 모든 단계")
     st.set_defaults(func=cmd_status)
 
-    sc = sub.add_parser("scenario", help="경우의 수(결정전, 이기면/지면, 다음 상대 후보, 최종 전적)")
-    sc.add_argument("stage", choices=list(VIEWS))
-    sc.add_argument("--tournament", default="worlds_2026")
+    sc = sub.add_parser("scenario", help="경우의 수(결정전, 이기면/지면, 다음 상대 후보, 우승 경로)")
+    sc.add_argument("tournament")
+    sc.add_argument("--stage")
     sc.add_argument("--team", help="팀 별칭(예: 젠지)")
     sc.set_defaults(func=cmd_scenario)
+
+    ru = sub.add_parser("rules", help="rules/events 의 규칙 파일을 모두 검증")
+    ru.set_defaults(func=cmd_rules)
 
     args = parser.parse_args()
     args.func(args)

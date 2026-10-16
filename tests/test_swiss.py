@@ -3,7 +3,8 @@ from dataclasses import replace
 import pytest
 
 from engine import swiss
-from pipeline import aliases, normalize, swiss_view
+from engine.rules import load_event_rules, stage_params
+from pipeline import aliases, normalize, registry
 from pipeline.swiss_data import load_swiss
 from storage.db import connect
 from tests.test_normalize import LEAGUE_ID, put
@@ -28,7 +29,7 @@ def conn():
 
 @pytest.fixture(scope="module")
 def rules():
-    return swiss.load_rules()
+    return stage_params(load_event_rules("worlds_2026"), "swiss")
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +38,7 @@ def m2025(conn):
 
 
 def test_replay_2025_matches_rule_model(m2025, rules):
-    rounds = swiss.assign_rounds(m2025, rules["swiss"]["round_sizes"])
+    rounds = swiss.assign_rounds(m2025, rules["round_sizes"])
     assert len(m2025) == 33
     assert swiss.validate(m2025, rounds, rules) == []
 
@@ -74,7 +75,7 @@ def _opponent_in_round(matches, rounds, team, round_no):
 
 
 def test_candidates_contain_actual_next_opponent_when_waiting(m2025, rules):
-    rounds = swiss.assign_rounds(m2025, rules["swiss"]["round_sizes"])
+    rounds = swiss.assign_rounds(m2025, rules["round_sizes"])
     for r in range(2, 6):
         history = _truncate(m2025, rounds, r)
         scen = swiss.team_scenarios(history, rules)
@@ -87,7 +88,7 @@ def test_candidates_contain_actual_next_opponent_when_waiting(m2025, rules):
 
 
 def test_candidates_contain_actual_next_opponent_mid_round(m2025, rules):
-    rounds = swiss.assign_rounds(m2025, rules["swiss"]["round_sizes"])
+    rounds = swiss.assign_rounds(m2025, rules["round_sizes"])
     by_id = {m.match_id: m for m in m2025}
     for r in range(1, 5):
         history = _truncate(m2025, rounds, r, pending_round=r)
@@ -106,7 +107,7 @@ def test_candidates_contain_actual_next_opponent_mid_round(m2025, rules):
 
 
 def test_current_opponent_never_a_next_candidate(m2025, rules):
-    rounds = swiss.assign_rounds(m2025, rules["swiss"]["round_sizes"])
+    rounds = swiss.assign_rounds(m2025, rules["round_sizes"])
     for r in range(1, 5):
         history = _truncate(m2025, rounds, r, pending_round=r)
         scen = swiss.team_scenarios(history, rules)
@@ -120,7 +121,7 @@ def test_current_opponent_never_a_next_candidate(m2025, rules):
 
 
 def test_decisive_flag_matches_best_of(m2025, rules):
-    rounds = swiss.assign_rounds(m2025, rules["swiss"]["round_sizes"])
+    rounds = swiss.assign_rounds(m2025, rules["round_sizes"])
     history = _truncate(m2025, rounds, 3, pending_round=3)
     scen = swiss.team_scenarios(history, rules)
     for m in history:
@@ -134,13 +135,13 @@ def test_2026_before_draw_has_schedule_but_no_teams(conn, rules):
     matches, _ = load_swiss(conn, "worlds_2026")
     assert len(matches) == 33
     assert swiss.team_scenarios(matches, rules) == {}
-    rounds = swiss.assign_rounds(matches, rules["swiss"]["round_sizes"])
+    rounds = swiss.assign_rounds(matches, rules["round_sizes"])
     assert [sum(1 for v in rounds.values() if v == n) for n in range(1, 6)] == [8, 8, 8, 6, 3]
 
 
 def test_views_render(conn):
-    status = "\n".join(swiss_view.render_status(conn, "worlds_2025"))
+    status = "\n".join(registry.render(conn, "worlds_2025", "status", "swiss"))
     assert "전적별 현황" in status and "검증 경고" not in status
-    scen = "\n".join(swiss_view.render_scenario(conn, "worlds_2026"))
+    scen = "\n".join(registry.render(conn, "worlds_2026", "scenario", "swiss"))
     assert "1경로" in scen and "6경로" in scen
-    assert "젠지 3-1 · 진출 확정" in "\n".join(swiss_view.render_scenario(conn, "worlds_2025", "젠지"))
+    assert "젠지 3-1 · 진출 확정" in "\n".join(registry.render(conn, "worlds_2025", "scenario", "swiss", "젠지"))

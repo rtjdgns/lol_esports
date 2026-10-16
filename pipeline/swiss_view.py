@@ -1,10 +1,10 @@
 from collections import defaultdict
 
 from engine.series import series_text
-from engine.swiss import assign_rounds, classify, final_paths, load_rules, replay, team_scenarios, validate
+from engine.swiss import assign_rounds, classify, final_paths, replay, team_scenarios, validate
 from pipeline.aliases import display_name
 from pipeline.schedule_view import KST, parse_utc
-from pipeline.swiss_data import load_swiss
+from pipeline.swiss_data import load_stage
 
 STATUS_KO = {"advanced": "진출 확정", "eliminated": "탈락 확정", "alive": "생존"}
 
@@ -21,12 +21,12 @@ def _fmt_record(record):
     return f"{record[0]}-{record[1]}"
 
 
-def render_status(conn, tournament_slug):
-    rules = load_rules()
-    matches, names = load_swiss(conn, tournament_slug)
+def render_status(conn, tournament_slug, stage, rules):
+    params = stage["params"]
+    matches, names = load_stage(conn, tournament_slug, stage["slug"])
     if not matches:
         return [f"{tournament_slug}: 스위스 경기 데이터 없음"]
-    rounds = assign_rounds(matches, rules["swiss"]["round_sizes"])
+    rounds = assign_rounds(matches, params["round_sizes"])
     done = sum(1 for m in matches if m.state == "completed")
     live = sum(1 for m in matches if m.state == "inProgress")
     lines = [f"[{tournament_slug}] 스위스 진행 상태 — 완료 {done}/{len(matches)} · 진행 중 {live} · 예정 {len(matches) - done - live}"]
@@ -44,18 +44,17 @@ def render_status(conn, tournament_slug):
         for t, rec in teams.items():
             groups[(rec.wins, rec.losses)].append(_name(conn, names, t))
         for record in sorted(groups, key=lambda r: (-r[0], r[1])):
-            tag = STATUS_KO[classify(*record, rules["swiss"]["win_target"], rules["swiss"]["loss_limit"])]
+            tag = STATUS_KO[classify(*record, params["win_target"], params["loss_limit"])]
             lines.append(f"  {_fmt_record(record)} {tag}: {', '.join(sorted(groups[record]))}")
-    for issue in validate(matches, rounds, rules):
+    for issue in validate(matches, rounds, params):
         lines.append(f"  ! 검증 경고: {issue}")
     return lines
 
 
-def render_scenario(conn, tournament_slug, only_team=None):
-    rules = load_rules()
-    cfg = rules["swiss"]
-    matches, names = load_swiss(conn, tournament_slug)
-    scenarios = team_scenarios(matches, rules)
+def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
+    cfg = stage["params"]
+    matches, names = load_stage(conn, tournament_slug, stage["slug"])
+    scenarios = team_scenarios(matches, cfg)
     lines = [f"[{tournament_slug}] 스위스 경우의 수 (경로 수는 가능한 승패 순서의 개수이며 확률이 아님)"]
     if not scenarios:
         paths = final_paths(0, 0, cfg["win_target"], cfg["loss_limit"])

@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "event": "worlds_2025",
+  "league_slug": "worlds",
+  "verified_at": "2026-10-16",
+  "sources": [
+    "lolesports API getStandings/getSchedule 실데이터 재생 검증 (tests/test_swiss.py, tests/test_knockout.py)"
+  ],
+  "stages": [
+    {
+      "slug": "swiss",
+      "type": "swiss",
+      "label": "스위스",
+      "params": {
+        "win_target": 3,
+        "loss_limit": 3,
+        "round_sizes": [
+          8,
+          8,
+          8,
+          6,
+          3
+        ],
+        "best_of": {
+          "normal": 1,
+          "decisive": 3
+        }
+      },
+      "notes": {
+        "basis": "월즈 2025 스위스 33경기 재생으로 구조(3승/3패, Bo3 결정전, 라운드별 8·8·8·6·3경기) 확인. 공식 규정 문서는 확인하지 않음"
+      }
+    },
+    {
+      "slug": "knockouts",
+      "type": "single_elim",
+      "label": "토너먼트",
+      "params": {
+        "round_sizes": [
+          4,
+          2,
+          1
+        ],
+        "round_labels": [
+          "8강",
+          "4강",
+          "결승"
+        ],
+        "wiring": "adjacent_pairs",
+        "draw": "worlds_swiss_records"
+      },
+      "notes": {
+        "basis": "월즈 2025 토너먼트 7경기의 id 순서와 8강 대진이 추첨 규칙과 일치함을 확인"
+      }
+    }
+  ],
+  "notes": {
+    "play_ins": "월즈 2025의 play_ins 단계에는 1경기(T1 대 IG, 시각 없음)만 있어 형식을 확인하지 못해 단계를 넣지 않음"
+  }
+}

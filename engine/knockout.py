@@ -60,8 +60,10 @@ def enumerate_outcomes(rounds):
     return outcomes
 
 
-def team_scenarios(matches, rules):
-    sizes = rules["knockouts"]["round_sizes"]
+def team_scenarios(matches, params):
+    if params["wiring"] != "adjacent_pairs":
+        raise NotImplementedError(params["wiring"])
+    sizes = params["round_sizes"]
     rounds = build_rounds(matches, sizes)
     issues = validate_bracket(rounds)
     outcomes = enumerate_outcomes(rounds)

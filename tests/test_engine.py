@@ -3,7 +3,8 @@ from pathlib import Path
 
 from collectors.lolesports import parse_schedule_events
 from engine.series import series_status
-from engine.swiss import classify, is_decisive, load_rules
+from engine.rules import load_event_rules, stage_params
+from engine.swiss import classify, is_decisive
 from models.schema import Match, SeriesTeam
 
 
@@ -29,7 +30,7 @@ def test_swiss_classify():
 
 
 def test_rules_load():
-    assert load_rules()["swiss"]["win_target"] == 3
+    assert stage_params(load_event_rules("worlds_2026"), "swiss")["win_target"] == 3
 
 
 def test_parse_real_sample():
