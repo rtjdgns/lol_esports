@@ -4,9 +4,9 @@ import sys
 from collectors.lolesports import LolEsportsCollector
 from datetime import date
 
-from pipeline import aliases, follow, knockout_view, normalize, schedule_view, swiss_view
+from pipeline import aliases, follow, knockout_view, normalize, playin_view, schedule_view, swiss_view
 
-VIEWS = {"swiss": swiss_view, "knockouts": knockout_view}
+VIEWS = {"play_in": playin_view, "swiss": swiss_view, "knockouts": knockout_view}
 from storage.db import DEFAULT_DB, connect, list_raw
 
 
