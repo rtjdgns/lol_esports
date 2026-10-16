@@ -55,6 +55,28 @@ def test_today_view_uses_kst(conn):
     aliases.load_aliases(conn)
     rows = schedule_view.matches_between(conn, date(2026, 10, 16), 1)
     assert [r["start_time_utc"] for r in rows] == ["2026-10-15T18:00:00Z", "2026-10-15T23:00:00Z"]
-    assert "10-16 03:00" in schedule_view.format_match(conn, rows[0])
-    assert "클라우드9" in schedule_view.format_match(conn, rows[0])
+    line = schedule_view.format_match(conn, rows[0])
+    assert "10-16 03:00" in line and "클라우드9" in line
     assert schedule_view.kst_date(datetime(2026, 10, 15, 16, 0, tzinfo=timezone.utc)) == date(2026, 10, 16)
+
+
+def test_follow_marks_and_filters(conn):
+    from pipeline import follow
+    aliases.load_aliases(conn)
+    assert follow.add_follow(conn, "클라우드9") == "98767991877340524"
+    assert follow.add_follow(conn, "없는팀") is None
+    rows = schedule_view.matches_between(conn, date(2026, 10, 16), 2)
+    follows = follow.followed_ids(conn)
+    lines = [schedule_view.format_match(conn, m, follows) for m in rows]
+    assert lines[0].startswith("★") and not lines[1].startswith("★")
+    assert len(schedule_view.matches_between(conn, date(2026, 10, 16), 2, only_followed=True)) == 1
+    follow.remove_follow(conn, "C9")
+    assert follow.list_follows(conn) == []
+
+
+def test_in_progress_line_shows_score(conn):
+    conn.execute("UPDATE matches SET state='inProgress' WHERE start_time_utc='2026-10-15T23:00:00Z'")
+    conn.execute("UPDATE match_teams SET game_wins=2 WHERE code='MVK' AND match_id=(SELECT id FROM matches WHERE start_time_utc='2026-10-15T23:00:00Z')")
+    aliases.load_aliases(conn)
+    rows = schedule_view.matches_between(conn, date(2026, 10, 16), 1)
+    assert "푸리아 0 : MVK 2 · MVK팀 1승 남음" in schedule_view.format_match(conn, rows[1], set())

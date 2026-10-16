@@ -4,7 +4,7 @@ import sys
 from collectors.lolesports import LolEsportsCollector
 from datetime import date
 
-from pipeline import aliases, normalize, schedule_view
+from pipeline import aliases, follow, normalize, schedule_view
 from storage.db import DEFAULT_DB, connect, list_raw
 
 
@@ -51,10 +51,21 @@ def cmd_aliases(args):
 def cmd_today(args):
     conn = connect(args.db)
     start = date.fromisoformat(args.date) if args.date else schedule_view.kst_date()
-    rows = schedule_view.matches_between(conn, start, args.days)
+    rows = schedule_view.matches_between(conn, start, args.days, only_followed=args.followed)
     print(f"{start} (KST) 부터 {args.days}일, {len(rows)}경기")
+    follows = follow.followed_ids(conn)
     for m in rows:
-        print(" ", schedule_view.format_match(conn, m))
+        print(" ", schedule_view.format_match(conn, m, follows))
+
+
+def cmd_follow(args):
+    conn = connect(args.db)
+    if args.action == "list":
+        print("팔로우:", ", ".join(follow.list_follows(conn)) or "없음")
+        return
+    fn = follow.add_follow if args.action == "add" else follow.remove_follow
+    for name in args.names:
+        print(f"{name}: {'적용' if fn(conn, name) else '팀을 찾지 못함(별칭 확인)'}")
 
 
 def main():
@@ -81,7 +92,13 @@ def main():
     d = sub.add_parser("today", help="KST 기준 경기 목록")
     d.add_argument("--date", help="YYYY-MM-DD (기본: 오늘 KST)")
     d.add_argument("--days", type=int, default=1)
+    d.add_argument("--followed", action="store_true", help="팔로우한 팀 경기만")
     d.set_defaults(func=cmd_today)
+
+    fo = sub.add_parser("follow", help="팀 팔로우 관리")
+    fo.add_argument("action", choices=["add", "remove", "list"])
+    fo.add_argument("names", nargs="*")
+    fo.set_defaults(func=cmd_follow)
 
     args = parser.parse_args()
     args.func(args)

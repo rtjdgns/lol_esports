@@ -73,6 +73,10 @@ CREATE TABLE IF NOT EXISTS match_teams (
     PRIMARY KEY (match_id, slot)
 );
 CREATE INDEX IF NOT EXISTS idx_match_teams_team ON match_teams (team_id);
+CREATE TABLE IF NOT EXISTS follows (
+    team_id TEXT PRIMARY KEY,
+    created_at TEXT NOT NULL
+);
 CREATE TABLE IF NOT EXISTS team_aliases (
     team_id TEXT NOT NULL,
     alias TEXT NOT NULL,

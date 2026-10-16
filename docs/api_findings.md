@@ -55,3 +55,12 @@ python scripts/verify_riot_api.py --no-key
 - 확인됨: 플레이-인 4팀 Bo5 더블 엘리미네이션(10/16~19), 스위스 16팀 5라운드(10/24~11/1), 3승 진출·3패 탈락, 토너먼트 8팀 Bo5.
 - 미확인: 스위스 결정전의 Bo3 여부(프라이머가 "단판승제, 3판 2선승제"를 병기), 타이브레이커 규칙(언급 없음).
 - 규칙 파일: `rules/worlds_2026.json`
+
+## 라이브 확인 (2026-10-16 KST 10시경, 플레이-인 진행 중)
+샘플: `data/raw_samples/getLive_inProgress.json`
+- 확인됨: 진행 중 경기의 `state`는 `inProgress`. 경기 종료 후 `completed`.
+- 확인됨: getLive는 getSchedule과 같은 이벤트 구조에 `tournament.id`, `streams`, 세트별 `match.games[]`(`number`, `state`, `teams[].side`, `vods`)가 추가된다. 세트 `state`는 `completed`/`inProgress`/`unstarted`. 현재 몇 세트가 진행 중인지는 `games[].state`로 알 수 있다.
+- 확인됨: 세트가 끝날 때마다 `result.gameWins`가 갱신된다(MVK 2 : FURIA 0, 3세트 진행 중 시점).
+- 확인됨: 팀 `record`(시즌 전적)는 시리즈 종료 시 갱신된다(KC 1-0, C9 0-1 / 종료 직후).
+- 확인됨: 라이브 중인 경기가 없으면 `events: []`.
+- 미확인: 폴링 간격에 따른 갱신 지연, 세트 사이 휴식 시간의 `state`, 경기 종료 후 getLive에서 사라지는 시점.
