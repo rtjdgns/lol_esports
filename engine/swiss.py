@@ -3,6 +3,8 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
+from engine.types import StageMatch
+
 RULES_PATH = Path(__file__).resolve().parent.parent / "rules" / "worlds_2026.json"
 
 
@@ -10,17 +12,7 @@ def load_rules(path=RULES_PATH):
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
-@dataclass(frozen=True)
-class SwissMatch:
-    match_id: str
-    start_time: object
-    best_of: object
-    state: str
-    team_ids: tuple
-    wins: tuple
-
-    def known(self):
-        return None not in self.team_ids
+SwissMatch = StageMatch
 
 
 def sort_key(m):
