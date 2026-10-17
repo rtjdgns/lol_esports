@@ -29,6 +29,13 @@ def cmd_fetch(args):
         sys.exit(1)
 
 
+def cmd_fetch_history(args):
+    conn = connect(args.db)
+    collector = LolEsportsCollector(hl=args.hl)
+    pages = collector.fetch_schedule_history(conn, args.league_id, args.since)
+    print(f"일정 {pages}페이지 저장 (leagueId={args.league_id}, {args.since} 이후까지)")
+
+
 def cmd_list(args):
     conn = connect(args.db)
     for r in list_raw(conn, args.limit):
@@ -123,6 +130,12 @@ def main():
     f.add_argument("-p", "--param", action="append", help="key=value (반복 가능)")
     f.add_argument("--hl", default="ko-KR")
     f.set_defaults(func=cmd_fetch)
+
+    fh = sub.add_parser("fetch-history", help="리그 일정의 과거 페이지를 지정 날짜까지 모두 저장")
+    fh.add_argument("league_id")
+    fh.add_argument("--since", required=True, help="YYYY-MM-DD")
+    fh.add_argument("--hl", default="ko-KR")
+    fh.set_defaults(func=cmd_fetch_history)
 
     l = sub.add_parser("list", help="저장된 raw 응답 목록")
     l.add_argument("--limit", type=int, default=20)

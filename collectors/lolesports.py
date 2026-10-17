@@ -1,3 +1,4 @@
+import json
 import os
 
 import requests
@@ -57,3 +58,20 @@ class LolEsportsCollector:
     def fetch_and_store(self, conn, endpoint, **params):
         raw = self.fetch_raw(endpoint, **params)
         return save_raw(conn, raw), raw
+
+    def fetch_schedule_history(self, conn, league_id, since, max_pages=40):
+        saved, token = 0, None
+        for _ in range(max_pages):
+            params = {"leagueId": league_id}
+            if token:
+                params["pageToken"] = token
+            _, raw = self.fetch_and_store(conn, "getSchedule", **params)
+            saved += 1
+            if raw.status_code != 200:
+                break
+            schedule = json.loads(raw.body_text)["data"]["schedule"]
+            events = schedule.get("events", [])
+            token = (schedule.get("pages") or {}).get("older")
+            if not token or (events and min(e["startTime"] for e in events) < since):
+                break
+        return saved
