@@ -104,6 +104,25 @@ def validate(matches, rounds, params):
     return issues
 
 
+def match_contexts(matches, params):
+    rounds = assign_rounds(matches, params["round_sizes"])
+    records, out = {}, {}
+    for m in sorted(matches, key=sort_key):
+        a, b = m.team_ids
+        if m.known():
+            recs = (records.get(a, (0, 0)), records.get(b, (0, 0)))
+            decisive = any(is_decisive(*r, params["win_target"], params["loss_limit"]) for r in recs)
+        else:
+            recs, decisive = (None, None), None
+        out[m.match_id] = {"round": rounds[m.match_id], "records": recs, "decisive": decisive,
+                           "last_round": rounds[m.match_id] == len(params["round_sizes"])}
+        if m.state == "completed" and m.known():
+            winner, loser = (a, b) if m.wins[0] > m.wins[1] else (b, a)
+            records[winner] = (records.get(winner, (0, 0))[0] + 1, records.get(winner, (0, 0))[1])
+            records[loser] = (records.get(loser, (0, 0))[0], records.get(loser, (0, 0))[1] + 1)
+    return out
+
+
 def _pending_by_team(matches):
     pending = {}
     for m in matches:

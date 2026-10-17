@@ -2,6 +2,8 @@ import json
 import re
 from pathlib import Path
 
+from engine.visibility import PolicyError, validate_event_override
+
 EVENTS_DIR = Path(__file__).resolve().parent.parent / "rules" / "events"
 
 
@@ -10,7 +12,7 @@ class RulesError(ValueError):
 
 
 TOP_REQUIRED = {"schema_version", "event", "league_slug", "verified_at", "sources", "stages"}
-TOP_ALLOWED = TOP_REQUIRED | {"entrants", "notes"}
+TOP_ALLOWED = TOP_REQUIRED | {"entrants", "notes", "display_policy"}
 STAGE_ALLOWED = {"slug", "type", "label", "params", "notes"}
 
 STAGE_TYPES = {
@@ -131,6 +133,11 @@ def validate_rules(data, expected_event=None):
             if t == stage["type"] and key in params and params[key] not in values:
                 raise RulesError(f"{where}: params.{key}='{params[key]}' 는 코드가 지원하지 않음 (허용: {sorted(values)})")
         STAGE_CHECKS[stage["type"]](params, where)
+    if "display_policy" in data:
+        try:
+            validate_event_override(data["display_policy"], data["stages"])
+        except PolicyError as e:
+            raise RulesError(str(e)) from e
     entrants = data.get("entrants")
     if entrants is not None:
         if set(entrants) - {"direct", "play_in", "notes"}:

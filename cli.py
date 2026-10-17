@@ -5,7 +5,8 @@ from collectors.lolesports import LolEsportsCollector
 from datetime import date
 
 from engine.rules import RulesError, list_events, load_event_rules
-from pipeline import aliases, follow, normalize, registry, schedule_view
+from engine.visibility import PolicyError, load_policy
+from pipeline import aliases, follow, normalize, registry, schedule_view, show
 from storage.db import DEFAULT_DB, connect, list_raw
 
 
@@ -85,8 +86,22 @@ def cmd_scenario(args):
         sys.exit(str(e))
 
 
+def cmd_show(args):
+    conn = connect(args.db)
+    try:
+        print(chr(10).join(show.render_show(conn, args.tournament)))
+    except (RulesError, PolicyError) as e:
+        sys.exit(str(e))
+
+
 def cmd_rules(args):
     failed = False
+    try:
+        load_policy()
+        print("OK   display_policy")
+    except PolicyError as e:
+        failed = True
+        print(f"FAIL display_policy: {e}")
     for event in list_events():
         try:
             rules = load_event_rules(event)
@@ -140,6 +155,10 @@ def main():
     sc.add_argument("--stage")
     sc.add_argument("--team", help="팀 별칭(예: 젠지)")
     sc.set_defaults(func=cmd_scenario)
+
+    sh = sub.add_parser("show", help="공개 수준 정책(rules/display_policy.json)에 따라 지금 보여 줄 것만 보기")
+    sh.add_argument("tournament")
+    sh.set_defaults(func=cmd_show)
 
     ru = sub.add_parser("rules", help="rules/events 의 규칙 파일을 모두 검증")
     ru.set_defaults(func=cmd_rules)

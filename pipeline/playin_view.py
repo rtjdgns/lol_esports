@@ -53,7 +53,7 @@ def render_status(conn, tournament_slug, stage, rules):
     return lines
 
 
-def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
+def render_scenario(conn, tournament_slug, stage, rules, only_team=None, team_ids=None, level=2):
     cfg = stage["params"]
     matches, names = load_stage(conn, tournament_slug, stage["slug"])
     if not matches:
@@ -72,6 +72,8 @@ def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
     order = sorted(res["teams"].items(), key=lambda kv: (kv[1]["status"] == "eliminated", kv[1]["status"] != "advanced", -kv[1]["advance"], _name(conn, names, kv[0])))
     for t, s in order:
         if wanted and t != wanted:
+            continue
+        if team_ids is not None and t not in team_ids:
             continue
         name = _name(conn, names, t)
         if s["status"] == "advanced":

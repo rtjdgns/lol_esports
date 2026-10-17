@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "swiss": {
+      "base": 1,
+      "promote": [
+        {"when": "followed_team_in_match", "to": 2},
+        {"when": "decisive_match", "to": 2},
+        {"when": "last_round_match", "to": 2}
+      ]
+    },
+    "bracket_graph": {"base": 2, "promote": []},
+    "single_elim": {
+      "base": 1,
+      "promote": [
+        {"when": "pre_draw_ready", "to": 2},
+        {"when": "draw_done", "to": 3}
+      ]
+    }
+  },
+  "notes": {
+    "levels": "1 일정·결과, 2 대진·진출 경우의 수, 3 우승 경우의 수",
+    "scope": "단계 형식별 기본값. 대회 규칙 파일의 display_policy.stages.<단계 슬러그> 로 덮어쓸 수 있다",
+    "origin": "앱의 설계 결정이며 외부 규정이 아님. 조건 이름은 engine/visibility.py 의 닫힌 목록만 허용"
+  }
+}

@@ -38,7 +38,7 @@
 | 1 | 대부분 완료 | 순위(`rankings`) 형식 미확인(경기 진행 후 재확인), 진행 중 `state`·getLive 구조 미확인, 정책·보조 소스 1차 조사 완료(`docs/policy_and_sources.md`), 직접 확인 항목(Riot 약관 전문, PandaScore 호출, Leaguepedia, Oracle's Elixir) 남음 |
 | 2 | 2a·2b·2c 완료(별칭은 월즈 19팀만, 미검증) | `raw_responses` 저장과 fetch/list CLI 완료. 정규화 테이블(tournaments, stages, teams, matches, match_teams, match_links)과 `normalize` CLI 완료. `aliases`, `today` CLI 완료. 남은 것: 별칭 한글 표기 사용자 확인, 일정 과거 페이지 수집, 월즈 외 대회 별칭. Standing, RosterEntry 스키마는 2b 이후 |
 | 3 | 시안 일부 | `engine/series.py` 문구 생성만 있음. 팔로우, 변경 감지, 텔레그램은 없음 |
-| 4 | 4a·4b·4c 완료 | `status swiss`(진행 상태)와 `scenario swiss`(경우의 수) 분리 구현, 월즈 2025로 검증. 4b 토너먼트(`status`/`scenario knockouts`, 8강 추첨 규칙 원문 확인·반영) 완료. 4c 플레이-인(`status`/`scenario play_in`, 6경기 전수 시뮬레이션으로 검증) 완료. 규칙 구조를 대회별 파일(`rules/events/`)과 단계 형식 등록 방식으로 개편, 규칙 검증 추가(`python cli.py rules`). 남은 것: 공개 수준 정책(display_policy), 4d 통합 뷰, 정규리그 순위 경우의 수 |
+| 4 | 4a·4b·4c 완료 | `status swiss`(진행 상태)와 `scenario swiss`(경우의 수) 분리 구현, 월즈 2025로 검증. 4b 토너먼트(`status`/`scenario knockouts`, 8강 추첨 규칙 원문 확인·반영) 완료. 4c 플레이-인(`status`/`scenario play_in`, 6경기 전수 시뮬레이션으로 검증) 완료. 규칙 구조를 대회별 파일(`rules/events/`)과 단계 형식 등록 방식으로 개편, 규칙 검증 추가(`python cli.py rules`). 공개 수준 정책(`rules/display_policy.json`, `python cli.py show`) 완료로 월즈 쪽 4단계 구현 끝. 남은 것: 정규리그(LCK) 순위 경우의 수 |
 
 ## 결정 사항
 - 원본(Raw) 저장: SQLite 확정에 맞춰 `raw_responses` 테이블(엔드포인트, 파라미터, 수집 시각, 본문)에 저장. 이전에 제안한 파일 저장은 철회. `data/raw_samples/`는 테스트 고정 입력으로만 유지.

@@ -77,7 +77,7 @@ def _pre_draw_lines(conn, tournament_slug, params, rules):
     return lines
 
 
-def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
+def render_scenario(conn, tournament_slug, stage, rules, only_team=None, team_ids=None, level=3):
     params = stage["params"]
     matches, names = load_stage(conn, tournament_slug, stage["slug"])
     if not matches:
@@ -102,6 +102,8 @@ def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
     for team_id, s in sorted(result["teams"].items(), key=order):
         if wanted and team_id != wanted:
             continue
+        if team_ids is not None and team_id not in team_ids:
+            continue
         name = _name(conn, names, team_id)
         if s["champion"]:
             lines.append(f"{name} · 우승")
@@ -109,11 +111,15 @@ def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
         if s["lost_in"] is not None:
             lines.append(f"{name} · {labels[s['lost_in']]} 탈락")
             continue
-        lines.append(f"{name} · 생존 · 우승으로 이어지는 조합 {s['title']}/{total}")
+        lines.append(f"{name} · 생존 · 우승으로 이어지는 조합 {s['title']}/{total}" if level >= 3 else f"{name} · 생존")
+        shown = 0
         for r in range(len(rounds)):
             played = any(m.state == "completed" and team_id in m.team_ids for m in rounds[r])
             if played or not s["opponents"][r]:
                 continue
+            if level < 3 and shown:
+                break
+            shown += 1
             opp = sorted(_name(conn, names, o) for o in s["opponents"][r])
             tag = "상대 확정" if len(opp) == 1 else "상대 후보"
             lines.append(f"    {labels[r]} {tag}: {', '.join(opp)}")

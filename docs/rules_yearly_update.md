@@ -11,3 +11,5 @@
 7. 출전 팀은 `entrants`에 team_id로 넣고, 한글 표기는 `rules/team_aliases.json`에 추가한 뒤 `python cli.py aliases`로 검증한다.
 8. 대회가 진행되면 `python cli.py status <대회>`의 검증 경고를 확인한다. 경고는 규칙과 실제 데이터가 어긋났다는 뜻이다.
 9. 대회가 끝나면 응답 샘플과 테스트를 남겨 다음 해 회귀 검증에 쓴다.
+
+공개 수준 정책(`rules/display_policy.json`)은 외부 규정이 아니라 앱의 설계 결정이므로 해마다 수집하지 않는다. 대회에서 정책을 다르게 하고 싶을 때만 대회 규칙 파일에 `display_policy.stages.<단계>` 를 넣는다.

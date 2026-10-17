@@ -51,7 +51,7 @@ def render_status(conn, tournament_slug, stage, rules):
     return lines
 
 
-def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
+def render_scenario(conn, tournament_slug, stage, rules, only_team=None, team_ids=None, level=2):
     cfg = stage["params"]
     matches, names = load_stage(conn, tournament_slug, stage["slug"])
     scenarios = team_scenarios(matches, cfg)
@@ -70,6 +70,8 @@ def render_scenario(conn, tournament_slug, stage, rules, only_team=None):
     order = sorted(scenarios.items(), key=lambda kv: (-kv[1]["record"][0], kv[1]["record"][1], _name(conn, names, kv[0])))
     for team_id, s in order:
         if wanted and team_id != wanted:
+            continue
+        if team_ids is not None and team_id not in team_ids:
             continue
         head = f"{_name(conn, names, team_id)} {_fmt_record(s['record'])} · {STATUS_KO[s['status']]}"
         if s["status"] != "alive":
